@@ -20,6 +20,66 @@ For my deep dive into layoff trends across industries, I leveraged several power
 - **Visual Studio Code:** My go-to for database management and executing SQL queries.
 - **Git & GitHub:** Essential for version control and sharing my SQL scripts and analysis, ensuring collaboration and project tracking.
 
+# Data Cleaning
+### Handling duplicates:
+
+```sql
+-- 1. Removing Duplicates
+
+WITH duplicates_value AS (
+    SELECT *,
+           ROW_NUMBER() OVER (PARTITION BY company, location, industry, total_laid_off, percentage_laid_off, date, stage, country, funds_raised) AS row_num
+    FROM layoffs_staging
+)
+
+SELECT *
+FROM duplicates_value
+WHERE row_num > 1;
+
+-- Creating a new table with adding new column row_num in it.
+
+CREATE TABLE layoffs_staging2 (
+    company TEXT NOT NULL,
+    location TEXT,
+    industry TEXT,
+    total_laid_off FLOAT,
+    percentage_laid_off FLOAT,
+    date DATE NOT NULL,
+    stage TEXT,
+    country TEXT NOT NULL,
+    funds_raised FLOAT,
+    row_num INT
+);
+
+INSERT INTO layoffs_staging2
+SELECT *,
+     ROW_NUMBER() OVER (PARTITION BY company, location, industry, total_laid_off, percentage_laid_off, date, stage, country, funds_raised) AS row_num
+FROM layoffs_staging
+
+SELECT * FROM layoffs_staging2
+WHERE row_num >1
+
+-- Now we can delete duplicate rows
+
+DELETE FROM layoffs_staging2
+WHERE row_num >1
+```
+### Handling null values:
+
+```sql
+-- Droping the rows contaning null values in both total_laid_off and percentage_laid_off columns
+
+SELECT * 
+FROM layoffs_staging2
+WHERE total_laid_off IS NULL 
+AND percentage_laid_off IS NULL
+
+
+DELETE FROM layoffs_staging2
+WHERE total_laid_off IS NULL 
+AND percentage_laid_off IS NULL
+```
+
 # The Analysis
 Each query in this project was designed to explore specific aspects of layoff trends across industries. Here's how I approached each question to uncover key insights from the data:
 
